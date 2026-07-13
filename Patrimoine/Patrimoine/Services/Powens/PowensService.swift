@@ -86,6 +86,44 @@ final class PowensService {
         return all.filter { $0.institution == institution }
     }
 
+    func fetchTransactions(accountIds: [FinancialAccount]) async throws -> [Transaction] {
+        try await ensureUserInitialized()
+        guard let authToken = KeychainHelper.load(forKey: Self.authTokenKey) else {
+            throw PowensError.noAuthToken
+        }
+
+        let accountMap = Dictionary(uniqueKeysWithValues: accountIds.compactMap { account -> (String, FinancialAccount)? in
+            guard let externalId = account.externalId else { return nil }
+            return (externalId, account)
+        })
+
+        let powensTransactions = try await apiClient.fetchTransactions(authToken: authToken)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate, .withDashSeparatorInDate]
+
+        return powensTransactions.compactMap { tx in
+            guard let idAccount = tx.idAccount,
+                  let account = accountMap["\(idAccount)"],
+                  let value = tx.value else { return nil }
+
+            let isIncome = value > 0
+            let date: Date = {
+                if let dateStr = tx.date, let parsed = formatter.date(from: dateStr) { return parsed }
+                return .now
+            }()
+
+            return Transaction(
+                id: stableUUID(for: tx.id),
+                label: tx.wording ?? "Opération",
+                amount: Decimal(abs(value)),
+                date: date,
+                category: categorize(wording: tx.wording ?? "", isIncome: isIncome),
+                accountId: account.id,
+                isIncome: isIncome
+            )
+        }
+    }
+
     func disconnect() {
         KeychainHelper.delete(forKey: Self.authTokenKey)
         hasAuthToken = false
@@ -137,6 +175,19 @@ final class PowensService {
     private func stableUUID(for powensId: Int) -> UUID {
         let hex = String(format: "%012x", powensId)
         return UUID(uuidString: "00000000-0000-4000-8000-\(hex)") ?? UUID()
+    }
+
+    private func categorize(wording: String, isIncome: Bool) -> SpendingCategory {
+        if isIncome { return .income }
+        let text = wording.lowercased()
+        if text.contains("carrefour") || text.contains("monoprix") || text.contains("leclerc") || text.contains("auchan") { return .groceries }
+        if text.contains("loyer") || text.contains("edf") || text.contains("engie") || text.contains("rent") { return .housing }
+        if text.contains("sncf") || text.contains("uber") || text.contains("total") || text.contains("essence") { return .transport }
+        if text.contains("netflix") || text.contains("spotify") || text.contains("abonnement") { return .subscriptions }
+        if text.contains("amazon") || text.contains("fnac") || text.contains("zara") { return .shopping }
+        if text.contains("pharma") || text.contains("docteur") || text.contains("mutuelle") { return .health }
+        if text.contains("restaurant") || text.contains("cinema") || text.contains("bar") { return .leisure }
+        return .other
     }
 }
 

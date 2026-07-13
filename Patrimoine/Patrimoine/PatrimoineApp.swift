@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct PatrimoineApp: App {
     @State private var aggregationService = AggregationService()
+    @State private var analyticsService = AnalyticsService()
     @State private var biometricLock = BiometricLockManager()
 
     init() {
@@ -15,6 +16,7 @@ struct PatrimoineApp: App {
         WindowGroup {
             MainTabView()
                 .environment(aggregationService)
+                .environment(analyticsService)
                 .environment(biometricLock)
                 .biometricLock()
                 .sheet(isPresented: Binding(

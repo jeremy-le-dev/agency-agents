@@ -33,6 +33,28 @@ struct DashboardView: View {
                         CategoryBreakdownView(categories: categoryBreakdown)
                     }
 
+                    NavigationLink {
+                        AnalyticsView()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Analyses & graphiques")
+                                    .font(AppTypography.headline())
+                                    .foregroundStyle(AppColors.primaryText)
+                                Text("Épargne, dépenses, cash-flow")
+                                    .font(AppTypography.caption())
+                                    .foregroundStyle(AppColors.secondaryText)
+                            }
+                            Spacer()
+                            Image(systemName: "chart.xyaxis.line")
+                                .font(.title2)
+                                .foregroundStyle(AppColors.accent)
+                        }
+                        .padding(16)
+                        .cardStyle()
+                    }
+                    .buttonStyle(.plain)
+
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Établissements")
                             .font(AppTypography.headline())
@@ -336,6 +358,11 @@ struct MainTabView: View {
             DashboardView()
                 .tabItem {
                     Label("Accueil", systemImage: "house.fill")
+                }
+
+            AnalyticsView()
+                .tabItem {
+                    Label("Analyses", systemImage: "chart.xyaxis.line")
                 }
 
             AccountsListView()

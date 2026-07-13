@@ -93,6 +93,22 @@ Activé par défaut. L'app se verrouille :
 
 Désactivable dans **Profil → Sécurité**.
 
+## Analyses
+
+Onglet **Analyses** avec Swift Charts :
+
+| Graphique | Contenu |
+|---|---|
+| Progression épargne | Courbe sur 12 mois (Livret A, LDDS, assurance vie) |
+| Évolution patrimoine | Total, épargne, investissements |
+| Revenus vs dépenses | Barres mensuelles |
+| Dépenses par catégorie | Donut + détail (alimentation, logement, etc.) |
+| Opérations récentes | Liste des dernières transactions |
+
+Filtres : ce mois / 3 mois / 6 mois.
+
+Les transactions proviennent de Powens si connecté, sinon données de démo sur les comptes courants.
+
 ## Widget
 
 1. Lancer l'app au moins une fois

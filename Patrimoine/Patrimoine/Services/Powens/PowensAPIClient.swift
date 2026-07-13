@@ -90,6 +90,24 @@ struct PowensConnectionsResponse: Decodable {
     let connections: [PowensConnection]
 }
 
+struct PowensTransactionsResponse: Decodable {
+    let transactions: [PowensTransaction]
+}
+
+struct PowensTransaction: Decodable {
+    let id: Int
+    let idAccount: Int?
+    let value: Double?
+    let wording: String?
+    let date: String?
+    let type: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, value, wording, date, type
+        case idAccount = "id_account"
+    }
+}
+
 actor PowensAPIClient {
     private let config: PowensConfig
     private let session: URLSession
@@ -139,6 +157,15 @@ actor PowensAPIClient {
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         let response: PowensConnectionsResponse = try await perform(request)
         return response.connections
+    }
+
+    func fetchTransactions(authToken: String, limit: Int = 500) async throws -> [PowensTransaction] {
+        var components = URLComponents(url: config.apiBaseURL.appendingPathComponent("users/me/transactions"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "limit", value: "\(limit)")]
+        var request = URLRequest(url: components.url!)
+        request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        let response: PowensTransactionsResponse = try await perform(request)
+        return response.transactions
     }
 
     func buildConnectURL(temporaryCode: String, connectorCapabilities: String = "bank") -> URL {
