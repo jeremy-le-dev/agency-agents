@@ -6,7 +6,7 @@ struct BalanceHeaderView: View {
     let isSyncing: Bool
     let onRefresh: () -> Void
 
-    @State private var isBalanceHidden = false
+    @State private var isBalanceHidden = WidgetDataManager.shared.isBalanceHidden
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -19,6 +19,7 @@ struct BalanceHeaderView: View {
 
                 Button {
                     isBalanceHidden.toggle()
+                    WidgetDataManager.shared.setBalanceHidden(isBalanceHidden)
                 } label: {
                     Image(systemName: isBalanceHidden ? "eye.slash" : "eye")
                         .font(.body)
@@ -48,6 +49,9 @@ struct BalanceHeaderView: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
+        .onAppear {
+            isBalanceHidden = WidgetDataManager.shared.isBalanceHidden
+        }
     }
 }
 

@@ -40,7 +40,8 @@ struct PatrimoineProvider: TimelineProvider {
             WidgetAccountSummary(id: UUID(), name: "Linxea Spirit 2", institution: "Linxea", balance: 45_680.15, colorHex: "E85D3B"),
             WidgetAccountSummary(id: UUID(), name: "PEA Amundi", institution: "Amundi", balance: 34_210.88, colorHex: "003DA5"),
             WidgetAccountSummary(id: UUID(), name: "Portefeuille actions", institution: "Trade Republic", balance: 18_945.32, colorHex: "1A1A1A")
-        ]
+        ],
+        isBalanceHidden: false
     )
 }
 
@@ -48,17 +49,24 @@ struct PatrimoineWidgetEntryView: View {
     var entry: PatrimoineProvider.Entry
     @Environment(\.widgetFamily) var family
 
+    private var deepLink: URL {
+        URL(string: AppGroupConstants.appDeepLink)!
+    }
+
     var body: some View {
-        switch family {
-        case .systemSmall:
-            SmallWidgetView(snapshot: entry.snapshot)
-        case .systemMedium:
-            MediumWidgetView(snapshot: entry.snapshot)
-        case .systemLarge:
-            LargeWidgetView(snapshot: entry.snapshot)
-        default:
-            SmallWidgetView(snapshot: entry.snapshot)
+        Group {
+            switch family {
+            case .systemSmall:
+                SmallWidgetView(snapshot: entry.snapshot)
+            case .systemMedium:
+                MediumWidgetView(snapshot: entry.snapshot)
+            case .systemLarge:
+                LargeWidgetView(snapshot: entry.snapshot)
+            default:
+                SmallWidgetView(snapshot: entry.snapshot)
+            }
         }
+        .widgetURL(deepLink)
     }
 }
 
@@ -79,18 +87,18 @@ struct SmallWidgetView: View {
             Spacer()
 
             if let snapshot {
-                Text(formatCurrency(snapshot.totalBalance, code: snapshot.currencyCode))
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
+                WidgetBalanceText(
+                    amount: snapshot.totalBalance,
+                    currencyCode: snapshot.currencyCode,
+                    isHidden: snapshot.isBalanceHidden,
+                    fontSize: 24
+                )
 
                 Text(snapshot.lastUpdated.formatted(.relative(presentation: .named)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             } else {
-                Text("Ouvrir l'app")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                WidgetEmptyState(message: "Ouvrir l'app")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -111,17 +119,21 @@ struct MediumWidgetView: View {
                     .foregroundStyle(.secondary)
 
                 if let snapshot {
-                    Text(formatCurrency(snapshot.totalBalance, code: snapshot.currencyCode))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .minimumScaleFactor(0.7)
-                        .lineLimit(1)
+                    WidgetBalanceText(
+                        amount: snapshot.totalBalance,
+                        currencyCode: snapshot.currencyCode,
+                        isHidden: snapshot.isBalanceHidden,
+                        fontSize: 28
+                    )
+                } else {
+                    WidgetEmptyState(message: "Ouvrir l'app")
                 }
 
                 Spacer()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let accounts = snapshot?.topAccounts.prefix(2) {
+            if let snapshot, !snapshot.isBalanceHidden, let accounts = Optional(snapshot.topAccounts.prefix(2)) {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(Array(accounts)) { account in
                         HStack(spacing: 6) {
@@ -132,11 +144,20 @@ struct MediumWidgetView: View {
                                 .font(.caption2)
                                 .lineLimit(1)
                             Spacer()
-                            Text(formatCurrency(account.balance, code: snapshot?.currencyCode ?? "EUR"))
+                            Text(formatCurrency(account.balance, code: snapshot.currencyCode))
                                 .font(.caption2)
                                 .fontWeight(.medium)
                         }
                     }
+                }
+                .frame(maxWidth: .infinity)
+            } else if snapshot?.isBalanceHidden == true {
+                VStack {
+                    Image(systemName: "eye.slash")
+                        .foregroundStyle(.secondary)
+                    Text("Soldes masqués")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -157,45 +178,97 @@ struct LargeWidgetView: View {
                 .foregroundStyle(.secondary)
 
             if let snapshot {
-                Text(formatCurrency(snapshot.totalBalance, code: snapshot.currencyCode))
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                WidgetBalanceText(
+                    amount: snapshot.totalBalance,
+                    currencyCode: snapshot.currencyCode,
+                    isHidden: snapshot.isBalanceHidden,
+                    fontSize: 34
+                )
 
-                Divider()
-
-                Text("Top comptes")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                ForEach(snapshot.topAccounts) { account in
+                if snapshot.isBalanceHidden {
                     HStack {
-                        Circle()
-                            .fill(Color(hex: account.colorHex))
-                            .frame(width: 10, height: 10)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(account.name)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            Text(account.institution)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
                         Spacer()
-                        Text(formatCurrency(account.balance, code: snapshot.currencyCode))
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                        Label("Soldes masqués", systemImage: "eye.slash")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
                     }
+                    Spacer()
+                } else if snapshot.topAccounts.isEmpty {
+                    WidgetEmptyState(message: "Aucun compte connecté")
+                    Spacer()
+                } else {
+                    Divider()
+
+                    Text("Top comptes")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    ForEach(snapshot.topAccounts) { account in
+                        HStack {
+                            Circle()
+                                .fill(Color(hex: account.colorHex))
+                                .frame(width: 10, height: 10)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(account.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Text(account.institution)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(formatCurrency(account.balance, code: snapshot.currencyCode))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                    }
+
+                    Spacer()
+
+                    Text("Mis à jour \(snapshot.lastUpdated.formatted(.relative(presentation: .named)))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
-
+            } else {
+                WidgetEmptyState(message: "Ouvrez Patrimoine pour synchroniser")
                 Spacer()
-
-                Text("Mis à jour \(snapshot.lastUpdated.formatted(.relative(presentation: .named)))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
             }
         }
         .containerBackground(for: .widget) {
             Color(hex: "F7F8FA")
         }
+    }
+}
+
+struct WidgetBalanceText: View {
+    let amount: Double
+    let currencyCode: String
+    let isHidden: Bool
+    let fontSize: CGFloat
+
+    var body: some View {
+        if isHidden {
+            Text("••••••")
+                .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+        } else {
+            Text(formatCurrency(amount, code: currencyCode))
+                .font(.system(size: fontSize, weight: .bold, design: .rounded))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+        }
+    }
+}
+
+struct WidgetEmptyState: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 }
 
@@ -209,7 +282,7 @@ private func formatCurrency(_ value: Double, code: String) -> String {
 }
 
 struct PatrimoineWidget: Widget {
-    let kind: String = "PatrimoineWidget"
+    let kind: String = AppGroupConstants.widgetKind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: PatrimoineProvider()) { entry in
@@ -228,6 +301,12 @@ struct PatrimoineWidget: Widget {
 }
 
 #Preview(as: .systemMedium) {
+    PatrimoineWidget()
+} timeline: {
+    PatrimoineEntry(date: .now, snapshot: PatrimoineProvider.demoSnapshot)
+}
+
+#Preview(as: .systemLarge) {
     PatrimoineWidget()
 } timeline: {
     PatrimoineEntry(date: .now, snapshot: PatrimoineProvider.demoSnapshot)

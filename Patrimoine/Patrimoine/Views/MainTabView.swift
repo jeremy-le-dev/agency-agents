@@ -311,7 +311,13 @@ struct ProfileView: View {
                 }
 
                 Section("Widget") {
-                    Text("Ajoutez le widget « Patrimoine » depuis l'écran d'accueil pour voir votre solde total en un coup d'œil.")
+                    Toggle(isOn: Binding(
+                        get: { WidgetDataManager.shared.isBalanceHidden },
+                        set: { WidgetDataManager.shared.setBalanceHidden($0) }
+                    )) {
+                        Label("Masquer les soldes", systemImage: "eye.slash")
+                    }
+                    Text("S'applique à l'app et au widget d'accueil. Appuyez sur le widget pour ouvrir Patrimoine.")
                         .font(AppTypography.caption())
                         .foregroundStyle(AppColors.secondaryText)
                 }

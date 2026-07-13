@@ -41,7 +41,10 @@ struct PatrimoineApp: App {
                 }
                 .onOpenURL { url in
                     guard url.scheme == "patrimoine" else { return }
-                    Task { await aggregationService.completePowensConnection() }
+                    let isPowensCallback = url.host == "powens" || url.path.contains("powens")
+                    if isPowensCallback {
+                        Task { await aggregationService.completePowensConnection() }
+                    }
                 }
         }
     }

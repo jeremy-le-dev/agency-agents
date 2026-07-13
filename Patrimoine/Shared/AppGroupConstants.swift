@@ -6,4 +6,7 @@ enum AppGroupConstants {
     static let lastUpdatedKey = "lastUpdated"
     static let accountsSnapshotKey = "accountsSnapshot"
     static let currencyCodeKey = "currencyCode"
+    static let balanceHiddenKey = "balanceHidden"
+    static let widgetKind = "PatrimoineWidget"
+    static let appDeepLink = "patrimoine://home"
 }

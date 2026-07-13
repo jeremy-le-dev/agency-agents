@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 @MainActor
 final class WidgetDataManager {
@@ -8,6 +9,27 @@ final class WidgetDataManager {
 
     private init() {
         defaults = UserDefaults(suiteName: AppGroupConstants.suiteName)
+    }
+
+    var isBalanceHidden: Bool {
+        defaults?.bool(forKey: AppGroupConstants.balanceHiddenKey) ?? false
+    }
+
+    func setBalanceHidden(_ hidden: Bool) {
+        defaults?.set(hidden, forKey: AppGroupConstants.balanceHiddenKey)
+        if let existing = load() {
+            let updated = WidgetSnapshot(
+                totalBalance: existing.totalBalance,
+                currencyCode: existing.currencyCode,
+                lastUpdated: existing.lastUpdated,
+                topAccounts: existing.topAccounts,
+                isBalanceHidden: hidden
+            )
+            if let data = try? JSONEncoder().encode(updated) {
+                defaults?.set(data, forKey: AppGroupConstants.accountsSnapshotKey)
+            }
+        }
+        reloadWidget()
     }
 
     func save(snapshot: PortfolioSnapshot) {
@@ -28,7 +50,8 @@ final class WidgetDataManager {
                         balance: NSDecimalNumber(decimal: $0.balance).doubleValue,
                         colorHex: $0.institution.brandColorHex
                     )
-                }
+                },
+            isBalanceHidden: isBalanceHidden
         )
 
         defaults.set(NSDecimalNumber(decimal: snapshot.totalBalance).doubleValue, forKey: AppGroupConstants.totalBalanceKey)
@@ -38,6 +61,12 @@ final class WidgetDataManager {
         if let data = try? JSONEncoder().encode(widgetSnapshot) {
             defaults.set(data, forKey: AppGroupConstants.accountsSnapshotKey)
         }
+
+        reloadWidget()
+    }
+
+    func reloadWidget() {
+        WidgetCenter.shared.reloadTimelines(ofKind: AppGroupConstants.widgetKind)
     }
 
     func load() -> WidgetSnapshot? {

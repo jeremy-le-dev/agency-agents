@@ -166,4 +166,28 @@ struct WidgetSnapshot: Codable {
     let currencyCode: String
     let lastUpdated: Date
     let topAccounts: [WidgetAccountSummary]
+    let isBalanceHidden: Bool
+
+    init(
+        totalBalance: Double,
+        currencyCode: String,
+        lastUpdated: Date,
+        topAccounts: [WidgetAccountSummary],
+        isBalanceHidden: Bool = false
+    ) {
+        self.totalBalance = totalBalance
+        self.currencyCode = currencyCode
+        self.lastUpdated = lastUpdated
+        self.topAccounts = topAccounts
+        self.isBalanceHidden = isBalanceHidden
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        totalBalance = try container.decode(Double.self, forKey: .totalBalance)
+        currencyCode = try container.decode(String.self, forKey: .currencyCode)
+        lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
+        topAccounts = try container.decode([WidgetAccountSummary].self, forKey: .topAccounts)
+        isBalanceHidden = try container.decodeIfPresent(Bool.self, forKey: .isBalanceHidden) ?? false
+    }
 }
