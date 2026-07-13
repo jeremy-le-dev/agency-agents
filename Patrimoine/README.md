@@ -10,6 +10,7 @@ Inspirée de **Bankin** et **Finary** : interface claire, cartes épurées, sold
 - **Comptes** : liste détaillée (courant, épargne, investissements, assurance vie)
 - **Connexion Powens (PSD2)** : Crédit Agricole, Trade Republic, Amundi, Linxea
 - **Face ID / Touch ID** : verrouillage au lancement et retour en arrière-plan
+- **Analyses & graphiques** : épargne, dépenses par catégorie, cash-flow
 - **Widget iOS** : petit, moyen et grand format
 - **Pull-to-refresh** et synchronisation
 - **Masquage du solde** (bouton œil)
