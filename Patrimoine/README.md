@@ -8,7 +8,8 @@ Inspirée de **Bankin** et **Finary** : interface claire, cartes épurées, sold
 
 - **Dashboard** : patrimoine total, répartition par catégorie, vue par établissement
 - **Comptes** : liste détaillée (courant, épargne, investissements, assurance vie)
-- **Connexion** : Crédit Agricole, Trade Republic, Amundi, Linxea
+- **Connexion Powens (PSD2)** : Crédit Agricole, Trade Republic, Amundi, Linxea
+- **Face ID / Touch ID** : verrouillage au lancement et retour en arrière-plan
 - **Widget iOS** : petit, moyen et grand format
 - **Pull-to-refresh** et synchronisation
 - **Masquage du solde** (bouton œil)
@@ -27,62 +28,80 @@ Inspirée de **Bankin** et **Finary** : interface claire, cartes épurées, sold
 ```
 Patrimoine/
 ├── Patrimoine/          # App principale SwiftUI
+│   ├── Services/Powens/ # API client + webview PSD2
+│   └── Views/Security/  # Face ID
 ├── PatrimoineWidget/    # Extension WidgetKit
 ├── Shared/              # Modèles partagés App Group
 └── project.yml          # Config XcodeGen
 ```
 
-- `InstitutionConnector` : protocole d'agrégation par établissement
-- `MockInstitutionConnector` : données de démo (MVP)
-- `PSD2AggregatorConnector` : point d'extension pour Powens / Budget Insight
+- `PowensService` : authentification, webview connect, sync comptes
+- `BiometricLockManager` : Face ID via LocalAuthentication
+- `MockInstitutionConnector` : mode démo sans Powens
 - `WidgetDataManager` : partage via App Group `group.com.patrimoine.app`
 
 ## Prérequis
 
 - macOS avec Xcode 15+
 - iOS 17+
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (optionnel mais recommandé)
+- Compte [Powens Console](https://console.powens.com) (pour connexion réelle)
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (recommandé)
 
 ## Installation
 
 ```bash
 cd Patrimoine
-
-# Générer le projet Xcode
-brew install xcodegen   # si nécessaire
-xcodegen generate
-
-# Ouvrir dans Xcode
+./setup.sh
 open Patrimoine.xcodeproj
 ```
 
-### Configuration manuelle (sans XcodeGen)
+## Configuration Powens
 
-1. Créer un projet iOS App « Patrimoine » dans Xcode
-2. Ajouter les sources de `Patrimoine/` et `Shared/`
-3. Créer une Widget Extension « PatrimoineWidget »
-4. Configurer l'App Group `group.com.patrimoine.app` sur les deux cibles
-5. Copier les fichiers `.entitlements`
+1. Créer un domaine et une application client sur [console.powens.com](https://console.powens.com)
+2. Ajouter `patrimoine://powens/callback` dans les redirect URIs autorisées
+3. Copier le fichier de config :
 
-### Widget
+```bash
+cp Patrimoine/PowensConfig.example.plist Patrimoine/PowensConfig.plist
+```
 
-1. Lancer l'app au moins une fois pour initialiser les données
-2. Appui long sur l'écran d'accueil → « + » → chercher « Patrimoine »
+4. Renseigner les clés :
+
+| Clé | Description |
+|---|---|
+| `POWENS_DOMAIN` | Votre domaine Powens (ex: `monapp`) |
+| `POWENS_CLIENT_ID` | ID de l'application client |
+| `POWENS_CLIENT_SECRET` | Secret client (dev uniquement) |
+| `POWENS_REDIRECT_URI` | `patrimoine://powens/callback` |
+| `POWENS_BACKEND_TOKEN_URL` | URL backend pour init sécurisé (prod) |
+
+> **Production** : ne jamais embarquer le `client_secret` dans l'app. Utilisez `POWENS_BACKEND_TOKEN_URL` pour générer le token côté serveur.
+
+### Flux de connexion
+
+1. L'utilisateur appuie sur « Connecter » → webview Powens (ASWebAuthenticationSession)
+2. Authentification bancaire PSD2 dans la webview
+3. Callback `patrimoine://powens/callback?connection_id=…`
+4. Récupération des comptes via `GET /users/me/accounts`
+5. Token stocké dans le Keychain iOS
+
+## Face ID
+
+Activé par défaut. L'app se verrouille :
+- au lancement
+- au retour depuis l'arrière-plan
+
+Désactivable dans **Profil → Sécurité**.
+
+## Widget
+
+1. Lancer l'app au moins une fois
+2. Appui long sur l'écran d'accueil → « + » → « Patrimoine »
 3. Choisir la taille (petit, moyen, grand)
 
-## Connexion bancaire réelle (production)
+## Mode démo
 
-Les connecteurs mock simulent la synchronisation. Pour une connexion PSD2 réelle :
-
-1. S'inscrire chez un agrégateur ([Powens](https://www.powens.com), Budget Insight, etc.)
-2. Implémenter `PSD2AggregatorConnector` avec l'API choisie
-3. Remplacer `MockInstitutionConnector` dans `AggregationService.init()`
-
-## Captures d'écran (écrans)
-
-| Accueil | Comptes | Ajouter | Widget |
-|---|---|---|---|
-| Solde total + répartition | Liste par catégorie | Connexion établissements | Solde en un coup d'œil |
+Sans `PowensConfig.plist`, l'app utilise des données simulées.
 
 ## Licence
 

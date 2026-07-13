@@ -13,6 +13,5 @@ build/
 # macOS
 .DS_Store
 
-# Swift Package Manager
-.build/
-.swiftpm/
+# Secrets Powens (ne pas committer)
+Patrimoine/Patrimoine/PowensConfig.plist

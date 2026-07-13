@@ -51,6 +51,16 @@ enum InstitutionType: String, Codable, CaseIterable, Identifiable {
         case .linxea: return .lifeInsurance
         }
     }
+
+    /// Mots-clés pour mapper les connecteurs Powens au type d'établissement.
+    var powensKeywords: [String] {
+        switch self {
+        case .creditAgricole: return ["crédit agricole", "credit agricole", "caisse régionale"]
+        case .tradeRepublic: return ["trade republic", "traderepublic"]
+        case .amundi: return ["amundi"]
+        case .linxea: return ["linxea"]
+        }
+    }
 }
 
 struct FinancialAccount: Identifiable, Codable, Hashable {
@@ -63,7 +73,67 @@ struct FinancialAccount: Identifiable, Codable, Hashable {
     var lastSyncedAt: Date
     var isConnected: Bool
     var accountNumberMasked: String?
+    var externalId: String?
+    var powensConnectionId: Int?
+    var dataSource: AccountDataSource
 
+    init(
+        id: UUID = UUID(),
+        name: String,
+        institution: InstitutionType,
+        category: AccountCategory,
+        balance: Decimal,
+        currencyCode: String,
+        lastSyncedAt: Date,
+        isConnected: Bool,
+        accountNumberMasked: String? = nil,
+        externalId: String? = nil,
+        powensConnectionId: Int? = nil,
+        dataSource: AccountDataSource = .mock
+    ) {
+        self.id = id
+        self.name = name
+        self.institution = institution
+        self.category = category
+        self.balance = balance
+        self.currencyCode = currencyCode
+        self.lastSyncedAt = lastSyncedAt
+        self.isConnected = isConnected
+        self.accountNumberMasked = accountNumberMasked
+        self.externalId = externalId
+        self.powensConnectionId = powensConnectionId
+        self.dataSource = dataSource
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, institution, category, balance, currencyCode
+        case lastSyncedAt, isConnected, accountNumberMasked
+        case externalId, powensConnectionId, dataSource
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        institution = try container.decode(InstitutionType.self, forKey: .institution)
+        category = try container.decode(AccountCategory.self, forKey: .category)
+        balance = try container.decode(Decimal.self, forKey: .balance)
+        currencyCode = try container.decode(String.self, forKey: .currencyCode)
+        lastSyncedAt = try container.decode(Date.self, forKey: .lastSyncedAt)
+        isConnected = try container.decode(Bool.self, forKey: .isConnected)
+        accountNumberMasked = try container.decodeIfPresent(String.self, forKey: .accountNumberMasked)
+        externalId = try container.decodeIfPresent(String.self, forKey: .externalId)
+        powensConnectionId = try container.decodeIfPresent(Int.self, forKey: .powensConnectionId)
+        dataSource = try container.decodeIfPresent(AccountDataSource.self, forKey: .dataSource) ?? .mock
+    }
+}
+
+enum AccountDataSource: String, Codable {
+    case mock
+    case powens
+}
+
+extension FinancialAccount {
     var formattedBalance: String {
         balance.formatted(.currency(code: currencyCode).locale(Locale(identifier: "fr_FR")))
     }

@@ -117,12 +117,26 @@ struct ConnectInstitutionView: View {
                             .foregroundStyle(AppColors.accent)
                         Text("Connecter un établissement")
                             .font(AppTypography.title())
-                        Text("Agrégez vos comptes bancaires, épargne et investissements en un seul endroit.")
+                        Text(connectionSubtitle)
                             .font(AppTypography.body())
                             .foregroundStyle(AppColors.secondaryText)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.top, 20)
+
+                    if aggregation.usesPowens {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.shield.fill")
+                                .foregroundStyle(AppColors.positive)
+                            Text("Connexion sécurisée via Powens (PSD2)")
+                                .font(AppTypography.caption())
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(AppColors.positive.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
 
                     VStack(spacing: 12) {
                         Text("Connectés")
@@ -187,6 +201,13 @@ struct ConnectInstitutionView: View {
             .background(AppColors.background)
             .navigationTitle("Ajouter")
         }
+    }
+
+    private var connectionSubtitle: String {
+        if aggregation.usesPowens {
+            return "Authentifiez-vous via Powens pour synchroniser vos comptes en lecture seule."
+        }
+        return "Agrégez vos comptes bancaires, épargne et investissements en un seul endroit."
     }
 }
 
@@ -255,12 +276,16 @@ struct AvailableInstitutionRow: View {
 }
 
 struct ProfileView: View {
+    @Environment(BiometricLockManager.self) private var biometricLock
+    @Environment(AggregationService.self) private var aggregation
+
     var body: some View {
         NavigationStack {
             List {
                 Section("Application") {
                     LabeledContent("Version", value: "1.0.0")
                     LabeledContent("Devise", value: "EUR")
+                    LabeledContent("Agrégateur", value: aggregation.usesPowens ? "Powens" : "Démo")
                 }
 
                 Section("Widget") {
@@ -270,12 +295,32 @@ struct ProfileView: View {
                 }
 
                 Section("Sécurité") {
-                    Label("Face ID activé", systemImage: "faceid")
+                    if biometricLock.isAvailable {
+                        Toggle(isOn: Binding(
+                            get: { biometricLock.isEnabled },
+                            set: { biometricLock.isEnabled = $0 }
+                        )) {
+                            Label("Verrouiller avec \(biometricLock.biometricType.label)", systemImage: biometricLock.biometricType.icon)
+                        }
+                    } else {
+                        Label("Biométrie non disponible", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(AppColors.secondaryText)
+                    }
+                    Label("Token Powens dans le Keychain", systemImage: "key.fill")
                     Label("Données locales chiffrées", systemImage: "lock.fill")
                 }
 
+                if aggregation.usesPowens {
+                    Section("Powens") {
+                        LabeledContent("Statut", value: aggregation.powensService.hasAuthToken ? "Connecté" : "En attente")
+                        Button("Réinitialiser la session Powens", role: .destructive) {
+                            aggregation.powensService.disconnect()
+                        }
+                    }
+                }
+
                 Section("À propos") {
-                    Text("Patrimoine agrège vos comptes Crédit Agricole, Trade Republic, Amundi et Linxea.")
+                    Text("Patrimoine agrège vos comptes Crédit Agricole, Trade Republic, Amundi et Linxea via Powens (PSD2).")
                         .font(AppTypography.caption())
                         .foregroundStyle(AppColors.secondaryText)
                 }

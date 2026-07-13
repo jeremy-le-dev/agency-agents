@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>POWENS_DOMAIN</key>
+	<string>your-domain</string>
+	<key>POWENS_CLIENT_ID</key>
+	<string>your-client-id</string>
+	<key>POWENS_CLIENT_SECRET</key>
+	<string>your-client-secret</string>
+	<key>POWENS_REDIRECT_URI</key>
+	<string>patrimoine://powens/callback</string>
+	<key>POWENS_BACKEND_TOKEN_URL</key>
+	<string>https://your-backend.example.com/powens/token</string>
+</dict>
+</plist>

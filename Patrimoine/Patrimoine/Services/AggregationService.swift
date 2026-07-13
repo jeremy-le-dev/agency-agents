@@ -7,16 +7,26 @@ final class AggregationService {
     private(set) var snapshot: PortfolioSnapshot = .empty
     private(set) var isSyncing = false
     private(set) var lastError: String?
+    private(set) var powensConnectURL: URL?
+    var showPowensConnect = false
 
+    let powensService = PowensService()
     private let storageKey = "patrimoine.accounts"
+    private let useDemoDataKey = "patrimoine.useDemoData"
     private var connectors: [InstitutionType: InstitutionConnector] = [:]
 
+    var usesPowens: Bool { powensService.isConfigured }
+
     init() {
+        configureConnectors()
+        loadFromDisk()
+        WidgetDataManager.shared.save(snapshot: snapshot)
+    }
+
+    private func configureConnectors() {
         for institution in InstitutionType.allCases {
             connectors[institution] = MockInstitutionConnector(institution: institution)
         }
-        loadFromDisk()
-        WidgetDataManager.shared.save(snapshot: snapshot)
     }
 
     var connectedInstitutions: Set<InstitutionType> {
@@ -42,15 +52,56 @@ final class AggregationService {
         lastError = nil
         defer { isSyncing = false }
 
+        if powensService.isConfigured {
+            do {
+                let url = try await powensService.buildConnectURL()
+                powensConnectURL = url
+                showPowensConnect = true
+            } catch {
+                lastError = error.localizedDescription
+            }
+            return
+        }
+
         do {
             guard let connector = connectors[institution] else { return }
             let newAccounts = try await connector.connect()
             var accounts = snapshot.accounts.filter { $0.institution != institution }
             accounts.append(contentsOf: newAccounts)
+            UserDefaults.standard.set(false, forKey: useDemoDataKey)
             updateSnapshot(accounts: accounts)
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    func completePowensConnection() async {
+        isSyncing = true
+        lastError = nil
+        defer {
+            isSyncing = false
+            showPowensConnect = false
+            powensConnectURL = nil
+        }
+
+        do {
+            let powensAccounts = try await powensService.fetchAllAccounts()
+            var accounts = snapshot.accounts.filter { $0.dataSource != .powens }
+            accounts.append(contentsOf: powensAccounts)
+            UserDefaults.standard.set(false, forKey: useDemoDataKey)
+            updateSnapshot(accounts: accounts)
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    func reportError(_ message: String?) {
+        lastError = message
+    }
+
+    func cancelPowensConnection() {
+        showPowensConnect = false
+        powensConnectURL = nil
     }
 
     func disconnect(institution: InstitutionType) {
@@ -63,11 +114,30 @@ final class AggregationService {
         lastError = nil
         defer { isSyncing = false }
 
+        if powensService.isConfigured && powensService.hasAuthToken {
+            do {
+                let powensAccounts = try await powensService.fetchAllAccounts()
+                var accounts = snapshot.accounts.filter { $0.dataSource != .powens }
+                accounts.append(contentsOf: powensAccounts)
+                updateSnapshot(accounts: accounts)
+                return
+            } catch {
+                lastError = error.localizedDescription
+            }
+        }
+
         var refreshed: [FinancialAccount] = []
 
         for institution in connectedInstitutions {
-            guard let connector = connectors[institution] else { continue }
             let institutionAccounts = snapshot.accounts.filter { $0.institution == institution }
+            guard let connector = connectors[institution] else {
+                refreshed.append(contentsOf: institutionAccounts)
+                continue
+            }
+
+            if institutionAccounts.allSatisfy({ $0.dataSource == .powens }) {
+                continue
+            }
 
             do {
                 let updated = try await connector.refresh(accounts: institutionAccounts)
@@ -78,6 +148,8 @@ final class AggregationService {
             }
         }
 
+        let powensExisting = snapshot.accounts.filter { $0.dataSource == .powens }
+        refreshed.append(contentsOf: powensExisting)
         updateSnapshot(accounts: refreshed)
     }
 
@@ -97,6 +169,10 @@ final class AggregationService {
         guard let data = UserDefaults.standard.data(forKey: storageKey),
               let accounts = try? JSONDecoder().decode([FinancialAccount].self, from: data),
               !accounts.isEmpty else {
+            if !UserDefaults.standard.bool(forKey: useDemoDataKey) && powensService.isConfigured {
+                snapshot = .empty
+                return
+            }
             loadDemoData()
             return
         }
@@ -114,6 +190,7 @@ final class AggregationService {
         for institution in InstitutionType.allCases {
             accounts.append(contentsOf: MockInstitutionConnector.sampleAccounts(for: institution))
         }
+        UserDefaults.standard.set(true, forKey: useDemoDataKey)
         updateSnapshot(accounts: accounts)
     }
 

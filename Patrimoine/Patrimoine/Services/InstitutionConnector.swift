@@ -10,6 +10,7 @@ enum ConnectorError: LocalizedError {
     case notImplemented
     case authenticationRequired
     case networkFailure
+    case powensRequired
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +20,8 @@ enum ConnectorError: LocalizedError {
             return "Authentification requise. Veuillez vous reconnecter."
         case .networkFailure:
             return "Impossible de synchroniser vos comptes. Réessayez plus tard."
+        case .powensRequired:
+            return "Connexion via Powens requise."
         }
     }
 }
@@ -47,7 +50,6 @@ struct MockInstitutionConnector: InstitutionConnector {
         case .creditAgricole:
             return [
                 FinancialAccount(
-                    id: UUID(),
                     name: "Compte courant",
                     institution: .creditAgricole,
                     category: .checking,
@@ -58,7 +60,6 @@ struct MockInstitutionConnector: InstitutionConnector {
                     accountNumberMasked: "•••• 4821"
                 ),
                 FinancialAccount(
-                    id: UUID(),
                     name: "Livret A",
                     institution: .creditAgricole,
                     category: .savings,
@@ -69,7 +70,6 @@ struct MockInstitutionConnector: InstitutionConnector {
                     accountNumberMasked: "•••• 9103"
                 ),
                 FinancialAccount(
-                    id: UUID(),
                     name: "LDDS",
                     institution: .creditAgricole,
                     category: .savings,
@@ -83,103 +83,66 @@ struct MockInstitutionConnector: InstitutionConnector {
         case .tradeRepublic:
             return [
                 FinancialAccount(
-                    id: UUID(),
                     name: "Portefeuille actions",
                     institution: .tradeRepublic,
                     category: .investment,
                     balance: 18_945.32,
                     currencyCode: "EUR",
                     lastSyncedAt: .now,
-                    isConnected: true,
-                    accountNumberMasked: nil
+                    isConnected: true
                 ),
                 FinancialAccount(
-                    id: UUID(),
                     name: "Compte espèces",
                     institution: .tradeRepublic,
                     category: .checking,
                     balance: 1_240.00,
                     currencyCode: "EUR",
                     lastSyncedAt: .now,
-                    isConnected: true,
-                    accountNumberMasked: nil
+                    isConnected: true
                 )
             ]
         case .amundi:
             return [
                 FinancialAccount(
-                    id: UUID(),
                     name: "PEA Amundi",
                     institution: .amundi,
                     category: .investment,
                     balance: 34_210.88,
                     currencyCode: "EUR",
                     lastSyncedAt: .now,
-                    isConnected: true,
-                    accountNumberMasked: nil
+                    isConnected: true
                 ),
                 FinancialAccount(
-                    id: UUID(),
                     name: "Assurance vie Amundi",
                     institution: .amundi,
                     category: .lifeInsurance,
                     balance: 22_500.00,
                     currencyCode: "EUR",
                     lastSyncedAt: .now,
-                    isConnected: true,
-                    accountNumberMasked: nil
+                    isConnected: true
                 )
             ]
         case .linxea:
             return [
                 FinancialAccount(
-                    id: UUID(),
                     name: "Linxea Spirit 2",
                     institution: .linxea,
                     category: .lifeInsurance,
                     balance: 45_680.15,
                     currencyCode: "EUR",
                     lastSyncedAt: .now,
-                    isConnected: true,
-                    accountNumberMasked: nil
+                    isConnected: true
                 ),
                 FinancialAccount(
-                    id: UUID(),
                     name: "Linxea Avenir 2",
                     institution: .linxea,
                     category: .lifeInsurance,
                     balance: 15_320.00,
                     currencyCode: "EUR",
                     lastSyncedAt: .now,
-                    isConnected: true,
-                    accountNumberMasked: nil
+                    isConnected: true
                 )
             ]
         }
-    }
-}
-
-/// Point d'extension pour intégrer un agrégateur PSD2 (Powens, Budget Insight, etc.)
-struct PSD2AggregatorConnector: InstitutionConnector {
-    let institution: InstitutionType
-    private let apiKey: String?
-
-    init(institution: InstitutionType, apiKey: String? = nil) {
-        self.institution = institution
-        self.apiKey = apiKey
-    }
-
-    func connect() async throws -> [FinancialAccount] {
-        guard apiKey != nil else {
-            throw ConnectorError.notImplemented
-        }
-        throw ConnectorError.notImplemented
-    }
-
-    func refresh(accounts: [FinancialAccount]) async throws -> [FinancialAccount] {
-        guard apiKey != nil else {
-            throw ConnectorError.notImplemented
-        }
-        throw ConnectorError.notImplemented
     }
 }
