@@ -27,6 +27,18 @@ struct PowensConfig: Sendable {
         isConfigured && (clientSecret != nil || backendTokenURL != nil)
     }
 
+    func makeConnectURL(temporaryCode: String, connectorCapabilities: String = "bank") -> URL {
+        var components = URLComponents(url: webviewBaseURL.appendingPathComponent("fr/connect"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "domain", value: webviewDomain),
+            URLQueryItem(name: "client_id", value: clientId),
+            URLQueryItem(name: "redirect_uri", value: redirectURI),
+            URLQueryItem(name: "code", value: temporaryCode),
+            URLQueryItem(name: "connector_capabilities", value: connectorCapabilities)
+        ]
+        return components.url!
+    }
+
     static func load() -> PowensConfig {
         guard let url = Bundle.main.url(forResource: "PowensConfig", withExtension: "plist"),
               let data = try? Data(contentsOf: url),
