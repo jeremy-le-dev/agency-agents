@@ -1,23 +1,26 @@
 #!/bin/bash
-# Corrige l'erreur "Build input file cannot be found: Info.plist"
-# Usage: ./fix-xcode.sh
-
 set -euo pipefail
+
 cd "$(dirname "$0")"
 
-echo "🔧 Suppression de l'ancien projet Xcode (références Info.plist obsolètes)..."
-rm -rf Patrimoine.xcodeproj Patrimoine.xcworkspace
+echo "🔧 Régénération du projet Xcode..."
 
 if ! command -v xcodegen &>/dev/null; then
   echo "Installation de XcodeGen..."
   brew install xcodegen
 fi
 
-echo "📦 Génération du projet..."
+rm -rf Patrimoine.xcodeproj Patrimoine.xcworkspace
+
 xcodegen generate
 
+if [[ ! -d Patrimoine.xcodeproj ]]; then
+  echo "❌ Échec : Patrimoine.xcodeproj non créé"
+  exit 1
+fi
+
 echo ""
-echo "✅ Terminé. Ouvrez Xcode :"
+echo "✅ Projet généré avec succès"
 echo "   open Patrimoine.xcodeproj"
 echo ""
-echo "Puis : Product → Clean Build Folder (⇧⌘K) → Run (⌘R)"
+echo "Puis : ⇧⌘K (Clean) → ⌘R"
