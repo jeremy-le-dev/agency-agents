@@ -32,7 +32,7 @@ struct LockScreenView: View {
                             Image(systemName: biometricType.icon)
                                 .font(.title2)
                         }
-                        Text("Déverrouiller avec \(biometricType.label)")
+                        Text(unlockLabel)
                             .font(AppTypography.headline())
                     }
                     .foregroundStyle(.white)
@@ -54,16 +54,20 @@ struct LockScreenView: View {
             .padding()
         }
     }
+
+    private var unlockLabel: String {
+        biometricType == .none ? "Déverrouiller" : "Déverrouiller avec \(biometricType.label)"
+    }
 }
 
 struct BiometricLockModifier: ViewModifier {
     @Environment(BiometricLockManager.self) private var lockManager
     @Environment(\.scenePhase) private var scenePhase
+    @State private var didScheduleLaunchAuth = false
 
     func body(content: Content) -> some View {
         ZStack {
             content
-                .disabled(!lockManager.isUnlocked && lockManager.isEnabled)
 
             if lockManager.isEnabled && !lockManager.isUnlocked {
                 LockScreenView(
@@ -74,18 +78,36 @@ struct BiometricLockModifier: ViewModifier {
                     Task { await lockManager.authenticate() }
                 }
                 .transition(.opacity)
+                .zIndex(1)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: lockManager.isUnlocked)
-        .task {
-            await lockManager.unlockIfNeeded()
+        .onAppear {
+            lockManager.prepareForLaunch()
+            scheduleLaunchAuthentication()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background || newPhase == .inactive {
+            switch newPhase {
+            case .background:
                 lockManager.lock()
-            } else if newPhase == .active {
-                Task { await lockManager.unlockIfNeeded() }
+            case .active:
+                if lockManager.isEnabled && !lockManager.isUnlocked {
+                    Task { await lockManager.authenticate() }
+                }
+            default:
+                break
             }
+        }
+    }
+
+    private func scheduleLaunchAuthentication() {
+        guard !didScheduleLaunchAuth, lockManager.isEnabled else { return }
+        didScheduleLaunchAuth = true
+        Task {
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard lockManager.isEnabled else { return }
+            lockManager.lock()
+            await lockManager.authenticate()
         }
     }
 }

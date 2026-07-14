@@ -5,7 +5,7 @@ import Observation
 @MainActor
 @Observable
 final class BiometricLockManager {
-    private(set) var isUnlocked = false
+    private(set) var isUnlocked = true
     private(set) var isAuthenticating = false
     private(set) var lastError: String?
 
@@ -13,11 +13,19 @@ final class BiometricLockManager {
         get { UserDefaults.standard.bool(forKey: Self.enabledKey) }
         set {
             UserDefaults.standard.set(newValue, forKey: Self.enabledKey)
-            if !newValue { isUnlocked = true }
+            isUnlocked = !newValue
+            if !newValue {
+                isUnlocked = true
+            }
         }
     }
 
     private static let enabledKey = "patrimoine.biometric.enabled"
+    private var hasUnlockedOnce = false
+
+    init() {
+        configureDefaults()
+    }
 
     var biometricType: BiometricType {
         let context = LAContext()
@@ -34,14 +42,24 @@ final class BiometricLockManager {
     }
 
     var isAvailable: Bool {
-        biometricType != .none
+        let context = LAContext()
+        var error: NSError?
+        return context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
     }
 
-    func lock() {
+    func prepareForLaunch() {
         guard isEnabled else {
             isUnlocked = true
             return
         }
+        // Premier lancement : afficher l'app puis verrouiller
+        if !hasUnlockedOnce {
+            isUnlocked = true
+        }
+    }
+
+    func lock() {
+        guard isEnabled, hasUnlockedOnce else { return }
         isUnlocked = false
     }
 
@@ -60,6 +78,12 @@ final class BiometricLockManager {
             return
         }
 
+        guard isAvailable else {
+            isUnlocked = true
+            isEnabled = false
+            return
+        }
+
         isAuthenticating = true
         lastError = nil
         defer { isAuthenticating = false }
@@ -67,19 +91,32 @@ final class BiometricLockManager {
         let context = LAContext()
         context.localizedCancelTitle = "Annuler"
 
+        let policy: LAPolicy = biometricType != .none
+            ? .deviceOwnerAuthenticationWithBiometrics
+            : .deviceOwnerAuthentication
+
         do {
             let success = try await context.evaluatePolicy(
-                .deviceOwnerAuthenticationWithBiometrics,
+                policy,
                 localizedReason: "Déverrouillez Patrimoine pour accéder à vos comptes."
             )
             isUnlocked = success
-            if !success {
+            if success {
+                hasUnlockedOnce = true
+            } else {
                 lastError = "Authentification échouée."
             }
         } catch {
             lastError = error.localizedDescription
             isUnlocked = false
         }
+    }
+
+    private func configureDefaults() {
+        if UserDefaults.standard.object(forKey: Self.enabledKey) == nil {
+            UserDefaults.standard.set(isAvailable, forKey: Self.enabledKey)
+        }
+        isUnlocked = true
     }
 }
 
