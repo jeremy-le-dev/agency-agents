@@ -83,3 +83,6 @@ integrations/codex/agents/*
 integrations/osaurus/agency-*/
 integrations/hermes/agency-agents-router/
 graphify-out/
+
+# Patrimoine iOS — secrets Powens
+Patrimoine/Patrimoine/PowensConfig.plist

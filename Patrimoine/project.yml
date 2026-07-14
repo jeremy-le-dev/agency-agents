@@ -19,6 +19,9 @@ targets:
     sources:
       - path: Patrimoine
       - path: Shared
+    resources:
+      - path: Patrimoine/PowensConfig.plist
+        optional: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.patrimoine.app
