@@ -43,7 +43,7 @@ final class PowensService {
             throw PowensError.noAuthToken
         }
         let code = try await apiClient.temporaryCode(authToken: authToken)
-        return apiClient.buildConnectURL(temporaryCode: code)
+        return PowensAPIClient.makeConnectURL(config: config, temporaryCode: code)
     }
 
     func handleCallback(url: URL) throws -> Int? {

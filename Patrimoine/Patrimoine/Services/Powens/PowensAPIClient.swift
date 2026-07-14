@@ -117,6 +117,26 @@ actor PowensAPIClient {
         self.session = session
     }
 
+    nonisolated static func makeConnectURL(
+        config: PowensConfig,
+        temporaryCode: String,
+        connectorCapabilities: String = "bank"
+    ) -> URL {
+        var components = URLComponents(url: config.webviewBaseURL.appendingPathComponent("fr/connect"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "domain", value: config.webviewDomain),
+            URLQueryItem(name: "client_id", value: config.clientId),
+            URLQueryItem(name: "redirect_uri", value: config.redirectURI),
+            URLQueryItem(name: "code", value: temporaryCode),
+            URLQueryItem(name: "connector_capabilities", value: connectorCapabilities)
+        ]
+        return components.url!
+    }
+
+    func buildConnectURL(temporaryCode: String, connectorCapabilities: String = "bank") -> URL {
+        Self.makeConnectURL(config: config, temporaryCode: temporaryCode, connectorCapabilities: connectorCapabilities)
+    }
+
     func initUser() async throws -> String {
         if let backendURL = config.backendTokenURL, let url = URL(string: backendURL) {
             return try await fetchTokenFromBackend(url: url)
@@ -166,18 +186,6 @@ actor PowensAPIClient {
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         let response: PowensTransactionsResponse = try await perform(request)
         return response.transactions
-    }
-
-    func buildConnectURL(temporaryCode: String, connectorCapabilities: String = "bank") -> URL {
-        var components = URLComponents(url: config.webviewBaseURL.appendingPathComponent("fr/connect"), resolvingAgainstBaseURL: false)!
-        components.queryItems = [
-            URLQueryItem(name: "domain", value: config.webviewDomain),
-            URLQueryItem(name: "client_id", value: config.clientId),
-            URLQueryItem(name: "redirect_uri", value: config.redirectURI),
-            URLQueryItem(name: "code", value: temporaryCode),
-            URLQueryItem(name: "connector_capabilities", value: connectorCapabilities)
-        ]
-        return components.url!
     }
 
     private func fetchTokenFromBackend(url: URL) async throws -> String {
