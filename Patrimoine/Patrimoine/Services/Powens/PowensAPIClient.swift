@@ -171,7 +171,7 @@ actor PowensAPIClient {
     func buildConnectURL(temporaryCode: String, connectorCapabilities: String = "bank") -> URL {
         var components = URLComponents(url: config.webviewBaseURL.appendingPathComponent("fr/connect"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
-            URLQueryItem(name: "domain", value: config.domain),
+            URLQueryItem(name: "domain", value: config.webviewDomain),
             URLQueryItem(name: "client_id", value: config.clientId),
             URLQueryItem(name: "redirect_uri", value: config.redirectURI),
             URLQueryItem(name: "code", value: temporaryCode),

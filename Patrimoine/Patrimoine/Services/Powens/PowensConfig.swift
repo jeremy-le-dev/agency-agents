@@ -15,6 +15,10 @@ struct PowensConfig: Sendable {
         URL(string: "https://webview.powens.com")!
     }
 
+    var webviewDomain: String {
+        domain.contains("biapi.pro") ? domain : "\(domain).biapi.pro"
+    }
+
     var isConfigured: Bool {
         !domain.isEmpty && !clientId.isEmpty
     }

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>POWENS_DOMAIN</key>
-	<string>your-domain</string>
+	<string>patrimoine-jfr-sandbox</string>
 	<key>POWENS_CLIENT_ID</key>
 	<string>your-client-id</string>
 	<key>POWENS_CLIENT_SECRET</key>
