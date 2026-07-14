@@ -16,6 +16,3 @@ build/
 # XcodeGen génère ces Info.plist
 Patrimoine/Info.plist
 PatrimoineWidget/Info.plist
-
-# Secrets Powens (ne pas committer)
-Patrimoine/Patrimoine/PowensConfig.plist

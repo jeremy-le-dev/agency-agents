@@ -84,5 +84,6 @@ integrations/osaurus/agency-*/
 integrations/hermes/agency-agents-router/
 graphify-out/
 
-# Patrimoine iOS — secrets Powens
-Patrimoine/Patrimoine/PowensConfig.plist
+# XcodeGen génère ces Info.plist
+Patrimoine/Patrimoine/Info.plist
+Patrimoine/PatrimoineWidget/Info.plist

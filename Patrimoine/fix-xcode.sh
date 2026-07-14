@@ -10,17 +10,14 @@ if ! command -v xcodegen &>/dev/null; then
   brew install xcodegen
 fi
 
-rm -rf Patrimoine.xcodeproj Patrimoine.xcworkspace
-
-xcodegen generate
-
-if [[ ! -d Patrimoine.xcodeproj ]]; then
-  echo "❌ Échec : Patrimoine.xcodeproj non créé"
+if [[ ! -f Patrimoine/PowensConfig.plist ]]; then
+  echo "❌ Patrimoine/PowensConfig.plist manquant"
+  echo "   Lancez : ./configure-powens.sh patrimoine-jfr-sandbox VOTRE_CLIENT_ID VOTRE_SECRET"
   exit 1
 fi
 
-echo ""
-echo "✅ Projet généré avec succès"
-echo "   open Patrimoine.xcodeproj"
-echo ""
-echo "Puis : ⇧⌘K (Clean) → ⌘R"
+rm -rf Patrimoine.xcodeproj Patrimoine.xcworkspace
+xcodegen generate
+
+echo "✅ Projet généré : open Patrimoine.xcodeproj"
+echo "   Puis ⇧⌘K → ⌘R"

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>POWENS_DOMAIN</key>
+	<string>patrimoine-jfr-sandbox</string>
+	<key>POWENS_CLIENT_ID</key>
+	<string>11388411</string>
+	<key>POWENS_CLIENT_SECRET</key>
+	<string>8HUeWMEg_bUa4R3uy7NkUihNrNu07LTj</string>
+	<key>POWENS_REDIRECT_URI</key>
+	<string>patrimoine://powens/callback</string>
+</dict>
+</plist>
