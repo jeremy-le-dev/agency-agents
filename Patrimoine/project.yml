@@ -19,9 +19,9 @@ targets:
     sources:
       - path: Patrimoine
       - path: Shared
-    resources:
       - path: Patrimoine/PowensConfig.plist
         optional: true
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.patrimoine.app
@@ -48,8 +48,6 @@ targets:
     platform: iOS
     sources:
       - path: PatrimoineWidget
-        excludes:
-          - Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.patrimoine.app.widget
@@ -63,9 +61,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: PatrimoineWidget/PatrimoineWidget.entitlements
-    dependencies:
-      - sdk: WidgetKit.framework
-      - sdk: SwiftUI.framework
 
 schemes:
   Patrimoine:
