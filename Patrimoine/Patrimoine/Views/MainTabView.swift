@@ -387,5 +387,6 @@ struct MainTabView: View {
                 }
         }
         .tint(AppColors.accent)
+        .background(AppColors.background)
     }
 }

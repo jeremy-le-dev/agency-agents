@@ -8,19 +8,15 @@ struct PatrimoineApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                AppColors.background.ignoresSafeArea()
-                MainTabView()
-            }
-            .environment(aggregationService)
-            .environment(analyticsService)
-            .environment(biometricLock)
-            .biometricLock()
-                .sheet(isPresented: powensSheetBinding) {
-                    if let url = aggregationService.powensConnectURL {
-                        PowensConnectSheet(connectURL: url) { result in
-                            handlePowensResult(result)
-                        }
+            RootView()
+                .environment(aggregationService)
+                .environment(analyticsService)
+                .environment(biometricLock)
+                .preferredColorScheme(.light)
+                .biometricLock()
+                .sheet(item: powensURLBinding) { item in
+                    PowensConnectSheet(connectURL: item.url) { result in
+                        handlePowensResult(result)
                     }
                 }
                 .onOpenURL { url in
@@ -33,11 +29,15 @@ struct PatrimoineApp: App {
         }
     }
 
-    private var powensSheetBinding: Binding<Bool> {
+    private var powensURLBinding: Binding<PowensSheetItem?> {
         Binding(
-            get: { aggregationService.showPowensConnect && aggregationService.powensConnectURL != nil },
-            set: { isPresented in
-                if !isPresented { aggregationService.cancelPowensConnection() }
+            get: {
+                guard aggregationService.showPowensConnect,
+                      let url = aggregationService.powensConnectURL else { return nil }
+                return PowensSheetItem(url: url)
+            },
+            set: { _ in
+                aggregationService.cancelPowensConnection()
             }
         )
     }
@@ -55,4 +55,18 @@ struct PatrimoineApp: App {
             }
         }
     }
+}
+
+private struct RootView: View {
+    var body: some View {
+        ZStack {
+            AppColors.background.ignoresSafeArea()
+            MainTabView()
+        }
+    }
+}
+
+private struct PowensSheetItem: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }

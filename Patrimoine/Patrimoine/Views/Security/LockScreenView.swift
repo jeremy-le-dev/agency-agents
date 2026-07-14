@@ -63,52 +63,35 @@ struct LockScreenView: View {
 struct BiometricLockModifier: ViewModifier {
     @Environment(BiometricLockManager.self) private var lockManager
     @Environment(\.scenePhase) private var scenePhase
-    @State private var didScheduleLaunchAuth = false
 
     func body(content: Content) -> some View {
-        ZStack {
-            content
-
-            if lockManager.isEnabled && !lockManager.isUnlocked {
-                LockScreenView(
-                    biometricType: lockManager.biometricType,
-                    isAuthenticating: lockManager.isAuthenticating,
-                    errorMessage: lockManager.lastError
-                ) {
-                    Task { await lockManager.authenticate() }
-                }
-                .transition(.opacity)
-                .zIndex(1)
-            }
-        }
-        .animation(.easeInOut(duration: 0.25), value: lockManager.isUnlocked)
-        .onAppear {
-            lockManager.prepareForLaunch()
-            scheduleLaunchAuthentication()
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            switch newPhase {
-            case .background:
-                lockManager.lock()
-            case .active:
+        content
+            .overlay {
                 if lockManager.isEnabled && !lockManager.isUnlocked {
-                    Task { await lockManager.authenticate() }
+                    LockScreenView(
+                        biometricType: lockManager.biometricType,
+                        isAuthenticating: lockManager.isAuthenticating,
+                        errorMessage: lockManager.lastError
+                    ) {
+                        Task { await lockManager.authenticate() }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
-            default:
-                break
             }
-        }
-    }
-
-    private func scheduleLaunchAuthentication() {
-        guard !didScheduleLaunchAuth, lockManager.isEnabled else { return }
-        didScheduleLaunchAuth = true
-        Task {
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            guard lockManager.isEnabled else { return }
-            lockManager.lock()
-            await lockManager.authenticate()
-        }
+            .animation(.easeInOut(duration: 0.25), value: lockManager.isUnlocked)
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .background:
+                    lockManager.lock()
+                case .active:
+                    if lockManager.isEnabled && !lockManager.isUnlocked {
+                        Task { await lockManager.authenticate() }
+                    }
+                default:
+                    break
+                }
+            }
     }
 }
 

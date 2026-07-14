@@ -13,19 +13,15 @@ final class BiometricLockManager {
         get { UserDefaults.standard.bool(forKey: Self.enabledKey) }
         set {
             UserDefaults.standard.set(newValue, forKey: Self.enabledKey)
-            isUnlocked = !newValue
-            if !newValue {
-                isUnlocked = true
+            isUnlocked = true
+            if newValue {
+                hasUnlockedOnce = true
             }
         }
     }
 
     private static let enabledKey = "patrimoine.biometric.enabled"
     private var hasUnlockedOnce = false
-
-    init() {
-        configureDefaults()
-    }
 
     var biometricType: BiometricType {
         let context = LAContext()
@@ -47,29 +43,9 @@ final class BiometricLockManager {
         return context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error)
     }
 
-    func prepareForLaunch() {
-        guard isEnabled else {
-            isUnlocked = true
-            return
-        }
-        // Premier lancement : afficher l'app puis verrouiller
-        if !hasUnlockedOnce {
-            isUnlocked = true
-        }
-    }
-
     func lock() {
         guard isEnabled, hasUnlockedOnce else { return }
         isUnlocked = false
-    }
-
-    func unlockIfNeeded() async {
-        guard isEnabled else {
-            isUnlocked = true
-            return
-        }
-        guard !isUnlocked else { return }
-        await authenticate()
     }
 
     func authenticate() async {
@@ -106,17 +82,13 @@ final class BiometricLockManager {
             } else {
                 lastError = "Authentification échouée."
             }
+        } catch let error as LAError where error.code == .userCancel || error.code == .systemCancel {
+            isUnlocked = false
+            lastError = nil
         } catch {
             lastError = error.localizedDescription
             isUnlocked = false
         }
-    }
-
-    private func configureDefaults() {
-        if UserDefaults.standard.object(forKey: Self.enabledKey) == nil {
-            UserDefaults.standard.set(isAvailable, forKey: Self.enabledKey)
-        }
-        isUnlocked = true
     }
 }
 

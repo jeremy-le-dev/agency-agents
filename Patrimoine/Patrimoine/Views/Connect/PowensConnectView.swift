@@ -8,7 +8,7 @@ struct PowensConnectView: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIViewController {
         let controller = UIViewController()
-        controller.view.backgroundColor = .clear
+        controller.view.backgroundColor = .systemBackground
         DispatchQueue.main.async {
             context.coordinator.start(from: controller)
         }
