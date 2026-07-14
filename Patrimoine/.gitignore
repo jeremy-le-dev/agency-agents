@@ -13,5 +13,9 @@ build/
 # macOS
 .DS_Store
 
+# XcodeGen génère ces Info.plist
+Patrimoine/Info.plist
+PatrimoineWidget/Info.plist
+
 # Secrets Powens (ne pas committer)
-Patrimoine/PowensConfig.plist
+Patrimoine/Patrimoine/PowensConfig.plist
