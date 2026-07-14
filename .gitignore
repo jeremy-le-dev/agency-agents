@@ -83,3 +83,7 @@ integrations/codex/agents/*
 integrations/osaurus/agency-*/
 integrations/hermes/agency-agents-router/
 graphify-out/
+
+# XcodeGen génère ces Info.plist
+Patrimoine/Patrimoine/Info.plist
+Patrimoine/PatrimoineWidget/Info.plist
